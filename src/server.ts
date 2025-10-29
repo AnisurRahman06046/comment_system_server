@@ -5,11 +5,10 @@ import swaggerDocs from './swagger';
 
 async function main() {
   try {
-    await mongoose.connect(config.database_uri as string);
+    await mongoose.connect(config.database_url as string);
     app.listen(config.port, () => {
       console.log(`Database is connected 🔥🔥🔥`);
       console.log(`server is running from ${config.port} ✅✅✅`);
-      
     });
   } catch (error) {
     console.log(`😭😭😭😭\n ${error}`);

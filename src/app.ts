@@ -14,8 +14,7 @@ app.use(cors());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 swaggerDocs(app, config.port);
-app.use(logger)
-// app.use(errorLogger)
+app.use(logger);
 app.use('/api/v1', routes);
 
 app.get('/', (req: Request, res: Response) => {

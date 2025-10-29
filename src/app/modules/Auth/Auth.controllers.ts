@@ -9,14 +9,12 @@ const register = catchAsync(async (req, res) => {
     statusCode: httpStatus.CREATED,
     success: true,
     message: 'User is registered successfully',
-    data: result?.userName,
+    data: result,
   });
 });
 
 const login = catchAsync(async (req, res) => {
-  const ipAddress =
-    req.headers['x-forwarded-for'] || req.connection.remoteAddress;
-  const result = await authServices.login(req.body, ipAddress as string);
+  const result = await authServices.login(req.body);
   sendApiResponse(res, {
     statusCode: httpStatus.OK,
     success: true,
@@ -25,4 +23,4 @@ const login = catchAsync(async (req, res) => {
   });
 });
 
-export const userControllers = { register, login };
+export const authControllers = { register, login };
