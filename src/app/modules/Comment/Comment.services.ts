@@ -10,6 +10,7 @@ import {
   IGetCommentsQuery,
   IGetRepliesQuery,
 } from './Comment.types';
+import { buildCursorQuery, formatCursorPaginationResult } from '../../utils/pagination';
 
 /**
  * Create a new comment
@@ -60,15 +61,14 @@ const createComment = async (
 const getComments = async (query: IGetCommentsQuery): Promise<IPaginatedComments> => {
   const { cursor, limit = 10, sortBy = SortType.NEWEST } = query;
 
-  const queryConditions: any = {
+  // Build base query for root comments only
+  const baseQuery = {
     isDeleted: false,
     parentComment: null, // Only root comments (not replies)
   };
 
-  // Add cursor condition for pagination
-  if (cursor) {
-    queryConditions._id = { $lt: new Types.ObjectId(cursor) };
-  }
+  // Build query with cursor
+  const queryConditions = buildCursorQuery(cursor, baseQuery);
 
   // Build sort criteria
   let sortCriteria: any = {};
@@ -84,14 +84,13 @@ const getComments = async (query: IGetCommentsQuery): Promise<IPaginatedComments
     .limit(limit + 1) // Fetch one extra to check if there are more
     .lean();
 
-  const hasMore = comments.length > limit;
-  const data = comments.slice(0, limit);
-  const nextCursor = hasMore && data.length > 0 ? data[data.length - 1]._id.toString() : null;
+  // Format pagination result using utility
+  const paginationResult = formatCursorPaginationResult(comments, limit);
 
   return {
-    data: data.map(formatCommentResponse),
-    nextCursor,
-    hasMore,
+    data: paginationResult.data.map(formatCommentResponse),
+    nextCursor: paginationResult.nextCursor,
+    hasMore: paginationResult.hasMore,
   };
 };
 
@@ -199,14 +198,14 @@ const getReplies = async (
     throw new ApiError(httpStatus.NOT_FOUND, 'Parent comment not found');
   }
 
-  const queryConditions: any = {
+  // Build base query for replies
+  const baseQuery = {
     isDeleted: false,
     parentComment: parentCommentId,
   };
 
-  if (cursor) {
-    queryConditions._id = { $lt: new Types.ObjectId(cursor) };
-  }
+  // Build query with cursor
+  const queryConditions = buildCursorQuery(cursor, baseQuery);
 
   const replies = await Comment.find(queryConditions)
     .populate('author', 'firstName lastName email')
@@ -214,14 +213,13 @@ const getReplies = async (
     .limit(limit + 1)
     .lean();
 
-  const hasMore = replies.length > limit;
-  const data = replies.slice(0, limit);
-  const nextCursor = hasMore && data.length > 0 ? data[data.length - 1]._id.toString() : null;
+  // Format pagination result using utility
+  const paginationResult = formatCursorPaginationResult(replies, limit);
 
   return {
-    data: data.map(formatCommentResponse),
-    nextCursor,
-    hasMore,
+    data: paginationResult.data.map(formatCommentResponse),
+    nextCursor: paginationResult.nextCursor,
+    hasMore: paginationResult.hasMore,
   };
 };
 
