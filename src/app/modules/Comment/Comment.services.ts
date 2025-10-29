@@ -16,6 +16,8 @@ import {
   buildCompoundCursorQuery,
   formatCompoundCursorPaginationResult,
 } from '../../utils/pagination';
+import { socketEmitter } from '../../utils/socketEmitter';
+import { SOCKET_EVENTS } from '../../socket/socket.events';
 
 /**
  * Create a new comment
@@ -55,7 +57,19 @@ const createComment = async (
     throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, 'Failed to create comment');
   }
 
-  return formatCommentResponse(populatedComment);
+  const formattedComment = formatCommentResponse(populatedComment);
+
+  // Emit real-time event
+  if (parentCommentId) {
+    socketEmitter.emit(SOCKET_EVENTS.COMMENT_REPLY, {
+      comment: formattedComment,
+      parentCommentId,
+    });
+  } else {
+    socketEmitter.emit(SOCKET_EVENTS.COMMENT_NEW, { comment: formattedComment });
+  }
+
+  return formattedComment;
 };
 
 /**
@@ -238,7 +252,12 @@ const updateComment = async (
     .populate('author', 'firstName lastName email')
     .lean();
 
-  return formatCommentResponse(updatedComment!);
+  const formattedComment = formatCommentResponse(updatedComment!);
+
+  // Emit real-time event
+  socketEmitter.emit(SOCKET_EVENTS.COMMENT_UPDATE, { comment: formattedComment });
+
+  return formattedComment;
 };
 
 /**
@@ -263,6 +282,9 @@ const deleteComment = async (commentId: string, userId: string): Promise<void> =
 
   comment.isDeleted = true;
   await comment.save();
+
+  // Emit real-time event
+  socketEmitter.emit(SOCKET_EVENTS.COMMENT_DELETE, { commentId });
 };
 
 /**
@@ -398,7 +420,12 @@ const toggleReaction = async (
     .populate('author', 'firstName lastName email')
     .lean();
 
-  return formatCommentResponse(updatedComment!);
+  const formattedComment = formatCommentResponse(updatedComment!);
+
+  // Emit real-time event
+  socketEmitter.emit(SOCKET_EVENTS.COMMENT_REACTION, { comment: formattedComment });
+
+  return formattedComment;
 };
 
 export const commentServices = {
