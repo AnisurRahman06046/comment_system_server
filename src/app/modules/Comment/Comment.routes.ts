@@ -9,6 +9,7 @@ import {
   getCommentByIdSchema,
   deleteCommentSchema,
   getRepliesSchema,
+  toggleReactionSchema,
 } from './Comment.validation';
 
 const router = Router();
@@ -59,6 +60,14 @@ router.get(
   auth,
   validateRequest(getRepliesSchema),
   commentControllers.getReplies,
+);
+
+// Toggle reaction (like/dislike) on a comment (protected)
+router.post(
+  '/:id/reaction',
+  auth,
+  validateRequest(toggleReactionSchema),
+  commentControllers.toggleReaction,
 );
 
 export const commentRoutes = router;

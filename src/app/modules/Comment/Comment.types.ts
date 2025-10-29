@@ -1,4 +1,4 @@
-import { SortType } from './Comment.constants';
+import { SortType, ReactionType } from './Comment.constants';
 
 /**
  * Request types for Comment operations
@@ -30,5 +30,5 @@ export type IGetRepliesQuery = {
 
 // Toggle reaction request
 export type IToggleReactionRequest = {
-  type: 'like' | 'dislike';
+  type: ReactionType;
 };

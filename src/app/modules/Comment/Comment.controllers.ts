@@ -107,6 +107,26 @@ const getReplies = catchAsync(async (req, res) => {
   });
 });
 
+/**
+ * Toggle reaction (like/dislike) on a comment
+ * POST /comments/:id/reaction
+ */
+const toggleReaction = catchAsync(async (req, res) => {
+  const userId = req.user?.userId;
+  const result = await commentServices.toggleReaction(
+    req.params.id,
+    userId,
+    req.body.type,
+  );
+
+  sendApiResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: 'Reaction updated successfully',
+    data: result,
+  });
+});
+
 export const commentControllers = {
   createComment,
   getComments,
@@ -114,4 +134,5 @@ export const commentControllers = {
   updateComment,
   deleteComment,
   getReplies,
+  toggleReaction,
 };

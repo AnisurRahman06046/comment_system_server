@@ -252,6 +252,66 @@ const formatCommentResponse = (comment: any): ICommentResponse => {
   };
 };
 
+/**
+ * Toggle reaction (like/dislike) on a comment
+ * Logic:
+ * - If user hasn't reacted: Add reaction
+ * - If user reacted with same type: Remove reaction (toggle off)
+ * - If user reacted with different type: Switch reaction
+ * Ensures one user can only have ONE reaction per comment
+ * @param commentId - Comment ID
+ * @param userId - User ID from token
+ * @param reactionType - LIKE or DISLIKE
+ * @returns Updated comment
+ */
+const toggleReaction = async (
+  commentId: string,
+  userId: string,
+  reactionType: ReactionType,
+): Promise<ICommentResponse> => {
+  const comment = await Comment.findOne({
+    _id: commentId,
+    isDeleted: false,
+  });
+
+  if (!comment) {
+    throw new ApiError(httpStatus.NOT_FOUND, 'Comment not found');
+  }
+
+  // Find existing reaction from this user
+  const existingReactionIndex = comment.reactions.findIndex(
+    (r) => r.userId.toString() === userId,
+  );
+
+  if (existingReactionIndex !== -1) {
+    // User has already reacted
+    const existingReaction = comment.reactions[existingReactionIndex];
+
+    if (existingReaction.type === reactionType) {
+      // Same reaction type - remove it (toggle off)
+      comment.reactions.splice(existingReactionIndex, 1);
+    } else {
+      // Different reaction type - switch it
+      comment.reactions[existingReactionIndex].type = reactionType;
+    }
+  } else {
+    // User hasn't reacted yet - add new reaction
+    comment.reactions.push({
+      userId: new Types.ObjectId(userId),
+      type: reactionType,
+    });
+  }
+
+  await comment.save();
+
+  // Return formatted comment with updated reaction counts
+  const updatedComment = await Comment.findById(comment._id)
+    .populate('author', 'firstName lastName email')
+    .lean();
+
+  return formatCommentResponse(updatedComment!);
+};
+
 export const commentServices = {
   createComment,
   getComments,
@@ -259,4 +319,5 @@ export const commentServices = {
   updateComment,
   deleteComment,
   getReplies,
+  toggleReaction,
 };
