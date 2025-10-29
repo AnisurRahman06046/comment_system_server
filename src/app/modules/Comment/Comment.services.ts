@@ -10,7 +10,12 @@ import {
   IGetCommentsQuery,
   IGetRepliesQuery,
 } from './Comment.types';
-import { buildCursorQuery, formatCursorPaginationResult } from '../../utils/pagination';
+import {
+  buildCursorQuery,
+  formatCursorPaginationResult,
+  buildCompoundCursorQuery,
+  formatCompoundCursorPaginationResult,
+} from '../../utils/pagination';
 
 /**
  * Create a new comment
@@ -61,31 +66,115 @@ const createComment = async (
 const getComments = async (query: IGetCommentsQuery): Promise<IPaginatedComments> => {
   const { cursor, limit = 10, sortBy = SortType.NEWEST } = query;
 
-  // Build base query for root comments only
+  // For sorting by likes/dislikes, use aggregation
+  if (sortBy === SortType.MOST_LIKED || sortBy === SortType.MOST_DISLIKED) {
+    return getCommentsWithAggregation(cursor, limit, sortBy);
+  }
+
+  // For NEWEST sorting, use simple query
   const baseQuery = {
     isDeleted: false,
-    parentComment: null, // Only root comments (not replies)
+    parentComment: null,
   };
 
-  // Build query with cursor
   const queryConditions = buildCursorQuery(cursor, baseQuery);
-
-  // Build sort criteria
-  let sortCriteria: any = {};
-  if (sortBy === SortType.NEWEST) {
-    sortCriteria = { createdAt: -1 };
-  }
-  // Note: For MOST_LIKED and MOST_DISLIKED, we'll implement in PHASE 4
-  // as it requires aggregation to count reactions
 
   const comments = await Comment.find(queryConditions)
     .populate('author', 'firstName lastName email')
-    .sort(sortCriteria)
-    .limit(limit + 1) // Fetch one extra to check if there are more
+    .sort({ createdAt: -1 })
+    .limit(limit + 1)
     .lean();
 
-  // Format pagination result using utility
   const paginationResult = formatCursorPaginationResult(comments, limit);
+
+  return {
+    data: paginationResult.data.map(formatCommentResponse),
+    nextCursor: paginationResult.nextCursor,
+    hasMore: paginationResult.hasMore,
+  };
+};
+
+/**
+ * Get comments using aggregation for sorting by reactions
+ * Uses compound cursor for proper pagination with sorted results
+ * @param cursor - Pagination cursor
+ * @param limit - Items per page
+ * @param sortBy - Sort type (MOST_LIKED or MOST_DISLIKED)
+ * @returns Paginated comments
+ */
+const getCommentsWithAggregation = async (
+  cursor: string | undefined,
+  limit: number,
+  sortBy: SortType,
+): Promise<IPaginatedComments> => {
+  const matchStage: any = {
+    isDeleted: false,
+    parentComment: null,
+  };
+
+  const pipeline: any[] = [
+    { $match: matchStage },
+    // Step 1: Compute reaction counts
+    {
+      $addFields: {
+        likesCount: {
+          $size: {
+            $filter: {
+              input: '$reactions',
+              as: 'reaction',
+              cond: { $eq: ['$$reaction.type', ReactionType.LIKE] },
+            },
+          },
+        },
+        dislikesCount: {
+          $size: {
+            $filter: {
+              input: '$reactions',
+              as: 'reaction',
+              cond: { $eq: ['$$reaction.type', ReactionType.DISLIKE] },
+            },
+          },
+        },
+      },
+    },
+  ];
+
+  // Step 2: Apply compound cursor filtering AFTER computing counts (if cursor provided)
+  const sortField = sortBy === SortType.MOST_LIKED ? 'likesCount' : 'dislikesCount';
+  const cursorQuery = buildCompoundCursorQuery(cursor, sortField, -1);
+  if (Object.keys(cursorQuery).length > 0) {
+    pipeline.push({ $match: cursorQuery });
+  }
+
+  // Step 3: Sort by computed field with _id as tiebreaker
+  pipeline.push(
+    {
+      $sort:
+        sortBy === SortType.MOST_LIKED
+          ? { likesCount: -1, _id: -1 }
+          : { dislikesCount: -1, _id: -1 },
+    },
+    { $limit: limit + 1 },
+    {
+      $lookup: {
+        from: 'users',
+        localField: 'author',
+        foreignField: '_id',
+        as: 'author',
+      },
+    },
+    { $unwind: '$author' },
+    {
+      $project: {
+        'author.password': 0,
+      },
+    },
+  );
+
+  const comments = await Comment.aggregate(pipeline);
+
+  // Step 4: Format pagination with compound cursor using reusable utility
+  const paginationResult = formatCompoundCursorPaginationResult(comments, limit, sortField);
 
   return {
     data: paginationResult.data.map(formatCommentResponse),

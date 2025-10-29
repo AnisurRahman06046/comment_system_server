@@ -37,7 +37,23 @@ export const updateCommentSchema = z.object({
 // Get comments query validation
 export const getCommentsSchema = z.object({
   query: z.object({
-    cursor: z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid cursor format').optional(),
+    cursor: z
+      .string()
+      .refine(
+        (val) => {
+          // Accept Base64-encoded JSON cursor
+          try {
+            const decoded = Buffer.from(val, 'base64').toString('utf8');
+            const parsed = JSON.parse(decoded);
+            return parsed._id !== undefined;
+          } catch {
+            // Also accept simple format for backward compatibility
+            return /^(\d+_)?[0-9a-fA-F]{24}$/.test(val);
+          }
+        },
+        { message: 'Invalid cursor format' },
+      )
+      .optional(),
     limit: z
       .string()
       .regex(/^\d+$/, 'Limit must be a number')
