@@ -4,6 +4,8 @@ A scalable, production-ready comment system built with MongoDB, Express.js, and 
 
 ## Livesite url : https://comment-system-server.onrender.com
 
+**Note** : Due to render deploy, the data fetching may cause latency.
+
 ## Features
 
 ### Core Functionality
