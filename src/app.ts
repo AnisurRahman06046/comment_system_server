@@ -3,19 +3,15 @@ import globalErrorHanlders from './app/middlewares/globalErrorHandlers';
 import notFoundHandler from './app/middlewares/notFound';
 import { rateLimiter } from './app/middlewares/rateLimiter';
 import { corsMiddleware } from './app/middlewares/cors.middleware';
-// import router from './app/routes';
-const app: Application = express();
 import routes from './app/routes';
-import swaggerDocs from '../src/swagger';
-import config from './app/config';
 import logger from './logger';
 
+const app: Application = express();
 
 app.use(corsMiddleware);
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(rateLimiter);
-swaggerDocs(app, config.port);
 app.use(logger);
 app.use('/api/v1', routes);
 
