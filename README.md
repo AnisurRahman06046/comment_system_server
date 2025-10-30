@@ -2,7 +2,7 @@
 
 A scalable, production-ready comment system built with MongoDB, Express.js, and Node.js featuring real-time updates via Socket.io.
 
-## Livesite url : https://comment-system-demo.netlify.app/login
+## Livesite url : https://comment-system-server.onrender.com
 
 ## Features
 
