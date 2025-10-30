@@ -15,10 +15,15 @@ async function main() {
     const httpServer = createServer(app);
 
     // Initialize Socket.io
+    const corsOrigins = process.env.CORS_ORIGIN
+      ? process.env.CORS_ORIGIN.split(',').map(origin => origin.trim())
+      : '*';
+
     const io = new Server(httpServer, {
       cors: {
-        origin: process.env.CORS_ORIGIN || '*',
+        origin: corsOrigins,
         methods: ['GET', 'POST'],
+        credentials: true,
       },
     });
 

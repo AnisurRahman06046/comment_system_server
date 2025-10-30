@@ -39,6 +39,7 @@ export interface ICommentResponse {
   };
   likesCount: number; // Computed from reactions
   dislikesCount: number; // Computed from reactions
+  userReaction?: ReactionType | null; // Current user's reaction (if any)
   parentComment?: string | null;
   createdAt: Date;
   updatedAt: Date;

@@ -24,13 +24,14 @@ const createComment = catchAsync(async (req, res) => {
  * GET /comments?cursor=xxx&limit=10&sortBy=newest
  */
 const getComments = catchAsync(async (req, res) => {
+  const userId = req.user?.userId;
   const query = {
     cursor: req.query.cursor as string | undefined,
     limit: req.query.limit ? parseInt(req.query.limit as string) : 10,
     sortBy: req.query.sortBy as any,
   };
 
-  const result = await commentServices.getComments(query);
+  const result = await commentServices.getComments(query, userId);
 
   sendApiResponse(res, {
     statusCode: httpStatus.OK,
@@ -45,7 +46,8 @@ const getComments = catchAsync(async (req, res) => {
  * GET /comments/:id
  */
 const getCommentById = catchAsync(async (req, res) => {
-  const result = await commentServices.getCommentById(req.params.id);
+  const userId = req.user?.userId;
+  const result = await commentServices.getCommentById(req.params.id, userId);
 
   sendApiResponse(res, {
     statusCode: httpStatus.OK,
@@ -92,12 +94,13 @@ const deleteComment = catchAsync(async (req, res) => {
  * GET /comments/:id/replies?cursor=xxx&limit=10
  */
 const getReplies = catchAsync(async (req, res) => {
+  const userId = req.user?.userId;
   const query = {
     cursor: req.query.cursor as string | undefined,
     limit: req.query.limit ? parseInt(req.query.limit as string) : 10,
   };
 
-  const result = await commentServices.getReplies(req.params.id, query);
+  const result = await commentServices.getReplies(req.params.id, query, userId);
 
   sendApiResponse(res, {
     statusCode: httpStatus.OK,

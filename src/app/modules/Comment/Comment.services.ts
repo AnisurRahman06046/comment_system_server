@@ -57,7 +57,7 @@ const createComment = async (
     throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, 'Failed to create comment');
   }
 
-  const formattedComment = formatCommentResponse(populatedComment);
+  const formattedComment = formatCommentResponse(populatedComment, userId);
 
   // Emit real-time event
   if (parentCommentId) {
@@ -75,14 +75,15 @@ const createComment = async (
 /**
  * Get comments with cursor-based pagination and sorting
  * @param query - Query parameters
+ * @param userId - Current user ID (optional)
  * @returns Paginated comments
  */
-const getComments = async (query: IGetCommentsQuery): Promise<IPaginatedComments> => {
+const getComments = async (query: IGetCommentsQuery, userId?: string): Promise<IPaginatedComments> => {
   const { cursor, limit = 10, sortBy = SortType.NEWEST } = query;
 
   // For sorting by likes/dislikes, use aggregation
   if (sortBy === SortType.MOST_LIKED || sortBy === SortType.MOST_DISLIKED) {
-    return getCommentsWithAggregation(cursor, limit, sortBy);
+    return getCommentsWithAggregation(cursor, limit, sortBy, userId);
   }
 
   // For NEWEST sorting, use simple query
@@ -102,7 +103,7 @@ const getComments = async (query: IGetCommentsQuery): Promise<IPaginatedComments
   const paginationResult = formatCursorPaginationResult(comments, limit);
 
   return {
-    data: paginationResult.data.map(formatCommentResponse),
+    data: paginationResult.data.map(comment => formatCommentResponse(comment, userId)),
     nextCursor: paginationResult.nextCursor,
     hasMore: paginationResult.hasMore,
   };
@@ -114,12 +115,14 @@ const getComments = async (query: IGetCommentsQuery): Promise<IPaginatedComments
  * @param cursor - Pagination cursor
  * @param limit - Items per page
  * @param sortBy - Sort type (MOST_LIKED or MOST_DISLIKED)
+ * @param userId - Current user ID (optional)
  * @returns Paginated comments
  */
 const getCommentsWithAggregation = async (
   cursor: string | undefined,
   limit: number,
   sortBy: SortType,
+  userId?: string,
 ): Promise<IPaginatedComments> => {
   const matchStage: any = {
     isDeleted: false,
@@ -191,7 +194,7 @@ const getCommentsWithAggregation = async (
   const paginationResult = formatCompoundCursorPaginationResult(comments, limit, sortField);
 
   return {
-    data: paginationResult.data.map(formatCommentResponse),
+    data: paginationResult.data.map(comment => formatCommentResponse(comment, userId)),
     nextCursor: paginationResult.nextCursor,
     hasMore: paginationResult.hasMore,
   };
@@ -200,9 +203,10 @@ const getCommentsWithAggregation = async (
 /**
  * Get a single comment by ID
  * @param commentId - Comment ID
+ * @param userId - Current user ID (optional)
  * @returns Comment
  */
-const getCommentById = async (commentId: string): Promise<ICommentResponse> => {
+const getCommentById = async (commentId: string, userId?: string): Promise<ICommentResponse> => {
   const comment = await Comment.findOne({
     _id: commentId,
     isDeleted: false,
@@ -214,7 +218,7 @@ const getCommentById = async (commentId: string): Promise<ICommentResponse> => {
     throw new ApiError(httpStatus.NOT_FOUND, 'Comment not found');
   }
 
-  return formatCommentResponse(comment);
+  return formatCommentResponse(comment, userId);
 };
 
 /**
@@ -252,7 +256,7 @@ const updateComment = async (
     .populate('author', 'firstName lastName email')
     .lean();
 
-  const formattedComment = formatCommentResponse(updatedComment!);
+  const formattedComment = formatCommentResponse(updatedComment!, userId);
 
   // Emit real-time event
   socketEmitter.emit(SOCKET_EVENTS.COMMENT_UPDATE, { comment: formattedComment });
@@ -291,11 +295,13 @@ const deleteComment = async (commentId: string, userId: string): Promise<void> =
  * Get replies for a comment
  * @param parentCommentId - Parent comment ID
  * @param query - Query parameters
+ * @param userId - Current user ID (optional)
  * @returns Paginated replies
  */
 const getReplies = async (
   parentCommentId: string,
   query: IGetRepliesQuery,
+  userId?: string,
 ): Promise<IPaginatedComments> => {
   const { cursor, limit = 10 } = query;
 
@@ -328,7 +334,7 @@ const getReplies = async (
   const paginationResult = formatCursorPaginationResult(replies, limit);
 
   return {
-    data: paginationResult.data.map(formatCommentResponse),
+    data: paginationResult.data.map(comment => formatCommentResponse(comment, userId)),
     nextCursor: paginationResult.nextCursor,
     hasMore: paginationResult.hasMore,
   };
@@ -336,8 +342,10 @@ const getReplies = async (
 
 /**
  * Helper function to format comment response
+ * @param comment - Comment document
+ * @param userId - Current user ID (optional)
  */
-const formatCommentResponse = (comment: any): ICommentResponse => {
+const formatCommentResponse = (comment: any, userId?: string): ICommentResponse => {
   const likesCount = comment.reactions?.filter(
     (r: any) => r.type === ReactionType.LIKE,
   ).length || 0;
@@ -345,6 +353,17 @@ const formatCommentResponse = (comment: any): ICommentResponse => {
   const dislikesCount = comment.reactions?.filter(
     (r: any) => r.type === ReactionType.DISLIKE,
   ).length || 0;
+
+  // Find current user's reaction (if any)
+  let userReaction: ReactionType | null = null;
+  if (userId && comment.reactions) {
+    const userReactionObj = comment.reactions.find(
+      (r: any) => r.userId.toString() === userId
+    );
+    if (userReactionObj) {
+      userReaction = userReactionObj.type;
+    }
+  }
 
   return {
     _id: comment._id.toString(),
@@ -357,6 +376,7 @@ const formatCommentResponse = (comment: any): ICommentResponse => {
     },
     likesCount,
     dislikesCount,
+    userReaction,
     parentComment: comment.parentComment?.toString() || null,
     createdAt: comment.createdAt,
     updatedAt: comment.updatedAt,
@@ -420,7 +440,7 @@ const toggleReaction = async (
     .populate('author', 'firstName lastName email')
     .lean();
 
-  const formattedComment = formatCommentResponse(updatedComment!);
+  const formattedComment = formatCommentResponse(updatedComment!, userId);
 
   // Emit real-time event
   socketEmitter.emit(SOCKET_EVENTS.COMMENT_REACTION, { comment: formattedComment });

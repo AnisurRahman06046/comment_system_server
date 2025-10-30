@@ -8,6 +8,7 @@ export default {
   port: process.env.PORT,
   database_url: process.env.DB_URI,
   default_password: process.env.DEFAULT_PASSWORD,
+  cors_origin: process.env.CORS_ORIGIN,
   jwt: {
     secret: process.env.JWT_SECRET,
     refresh_secret: process.env.JWT_REFRESH_SECRET,
