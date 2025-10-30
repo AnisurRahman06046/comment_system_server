@@ -4,30 +4,22 @@ import { z } from 'zod';
 export const registerSchema = z.object({
   body: z.object({
     firstName: z
-      .string({
-        required_error: 'First name is required',
-      })
+      .string({ message: 'First name is required' })
       .min(2, 'First name must be at least 2 characters')
       .max(50, 'First name must not exceed 50 characters')
       .trim(),
     lastName: z
-      .string({
-        required_error: 'Last name is required',
-      })
+      .string({ message: 'Last name is required' })
       .min(2, 'Last name must be at least 2 characters')
       .max(50, 'Last name must not exceed 50 characters')
       .trim(),
     email: z
-      .string({
-        required_error: 'Email is required',
-      })
+      .string({ message: 'Email is required' })
       .email('Invalid email format')
       .toLowerCase()
       .trim(),
     password: z
-      .string({
-        required_error: 'Password is required',
-      })
+      .string({ message: 'Password is required' })
       .min(6, 'Password must be at least 6 characters')
       .max(100, 'Password must not exceed 100 characters')
       .regex(
@@ -41,16 +33,12 @@ export const registerSchema = z.object({
 export const loginSchema = z.object({
   body: z.object({
     email: z
-      .string({
-        required_error: 'Email is required',
-      })
+      .string({ message: 'Email is required' })
       .email('Invalid email format')
       .toLowerCase()
       .trim(),
     password: z
-      .string({
-        required_error: 'Password is required',
-      })
+      .string({ message: 'Password is required' })
       .min(1, 'Password is required'),
   }),
 });

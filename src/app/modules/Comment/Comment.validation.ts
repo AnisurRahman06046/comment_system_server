@@ -5,9 +5,7 @@ import { ReactionType, SortType } from './Comment.constants';
 export const createCommentSchema = z.object({
   body: z.object({
     content: z
-      .string({
-        required_error: 'Content is required',
-      })
+      .string({ message: 'Content is required' })
       .min(1, 'Comment cannot be empty')
       .max(2000, 'Comment cannot exceed 2000 characters')
       .trim(),
@@ -25,9 +23,7 @@ export const updateCommentSchema = z.object({
   }),
   body: z.object({
     content: z
-      .string({
-        required_error: 'Content is required',
-      })
+      .string({ message: 'Content is required' })
       .min(1, 'Comment cannot be empty')
       .max(2000, 'Comment cannot exceed 2000 characters')
       .trim(),
@@ -101,7 +97,7 @@ export const toggleReactionSchema = z.object({
   }),
   body: z.object({
     type: z.nativeEnum(ReactionType, {
-      required_error: 'Reaction type is required',
+      message: 'Reaction type is required',
     }),
   }),
 });

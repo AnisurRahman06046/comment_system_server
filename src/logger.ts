@@ -7,7 +7,7 @@ const logger = expressWinston.logger({
       format: format.combine(
         format.colorize(),
         format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
-        format.printf(({ timestamp, level, message, meta }) => {
+        format.printf(({ timestamp, level, message, meta }: any) => {
           const method = meta?.req?.method || '';
           const url = meta?.req?.url || '';
           const status = meta?.res?.statusCode || '';

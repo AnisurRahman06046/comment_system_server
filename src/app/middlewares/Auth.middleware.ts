@@ -8,7 +8,7 @@ import { ApiError } from '../Errors/ApiError';
 const generateToken = async (payload: Record<string, unknown>): Promise<string> => {
   return jwt.sign(payload, config.jwt.secret as Secret, {
     expiresIn: config.jwt.expires_in,
-  });
+  } as any);
 };
 
 const verifyToken = async (

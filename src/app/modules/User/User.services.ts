@@ -9,18 +9,18 @@ import { IUser, IUserResponse } from './User.interfaces';
  * @returns User without password
  */
 const getUserById = async (userId: string): Promise<IUserResponse> => {
-  const user = await User.findById(userId).select('-password');
+  const user = await User.findById(userId).select('-password').lean();
   if (!user) {
     throw new ApiError(httpStatus.NOT_FOUND, 'User not found');
   }
 
   return {
-    _id: user._id.toString(),
+    _id: (user._id as any).toString(),
     firstName: user.firstName,
     lastName: user.lastName,
     email: user.email,
-    createdAt: user.createdAt,
-    updatedAt: user.updatedAt,
+    createdAt: (user as any).createdAt as Date,
+    updatedAt: (user as any).updatedAt as Date,
   };
 };
 
@@ -51,14 +51,15 @@ const isUserExists = async (email: string): Promise<boolean> => {
  */
 const createUser = async (userData: IUser): Promise<IUserResponse> => {
   const user = await User.create(userData);
+  const userObj = user.toObject() as any;
 
   return {
-    _id: user._id.toString(),
-    firstName: user.firstName,
-    lastName: user.lastName,
-    email: user.email,
-    createdAt: user.createdAt,
-    updatedAt: user.updatedAt,
+    _id: userObj._id.toString(),
+    firstName: userObj.firstName,
+    lastName: userObj.lastName,
+    email: userObj.email,
+    createdAt: userObj.createdAt as Date,
+    updatedAt: userObj.updatedAt as Date,
   };
 };
 

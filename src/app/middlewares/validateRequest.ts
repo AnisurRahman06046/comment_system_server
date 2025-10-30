@@ -1,5 +1,5 @@
 import { NextFunction, Request, Response } from 'express';
-import { AnyZodObject, ZodError } from 'zod';
+import { ZodTypeAny, ZodError } from 'zod';
 import httpStatus from 'http-status';
 import { ApiError } from '../Errors/ApiError';
 
@@ -8,7 +8,7 @@ import { ApiError } from '../Errors/ApiError';
  * @param schema - Zod schema to validate against
  */
 export const validateRequest =
-  (schema: AnyZodObject) =>
+  (schema: ZodTypeAny) =>
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       await schema.parseAsync({
