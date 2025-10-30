@@ -65,8 +65,8 @@ A scalable, production-ready comment system built with MongoDB, Express.js, and 
 1. **Clone the repository**
 
 ```bash
-git clone <your-repo-url>
-cd backend
+git clone https://github.com/AnisurRahman06046/comment_system_server.git
+cd comment_system_server
 ```
 
 2. **Install dependencies**
