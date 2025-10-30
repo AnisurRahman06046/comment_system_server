@@ -2,9 +2,12 @@
 
 A scalable, production-ready comment system built with MongoDB, Express.js, and Node.js featuring real-time updates via Socket.io.
 
+## Livesite url : https://comment-system-demo.netlify.app/login
+
 ## Features
 
 ### Core Functionality
+
 - User authentication with JWT
 - Create, read, update, delete comments
 - Like/dislike comments with toggle functionality
@@ -14,6 +17,7 @@ A scalable, production-ready comment system built with MongoDB, Express.js, and 
 - Multiple sorting options (newest, most liked, most disliked)
 
 ### Security
+
 - JWT authentication for all protected endpoints
 - Password hashing with bcrypt
 - Input validation with Zod
@@ -22,6 +26,7 @@ A scalable, production-ready comment system built with MongoDB, Express.js, and 
 - Soft delete for data retention
 
 ### Architecture
+
 - Modular structure following best practices
 - TypeScript for type safety
 - Reusable utilities
@@ -48,6 +53,7 @@ A scalable, production-ready comment system built with MongoDB, Express.js, and 
 ## Installation
 
 ### Prerequisites
+
 - Node.js (v16+)
 - MongoDB Atlas account or local MongoDB instance
 - npm or yarn
@@ -55,18 +61,21 @@ A scalable, production-ready comment system built with MongoDB, Express.js, and 
 ### Setup
 
 1. **Clone the repository**
+
 ```bash
 git clone <your-repo-url>
 cd backend
 ```
 
 2. **Install dependencies**
+
 ```bash
 npm install
 ```
 
 3. **Environment Variables**
-Create a `.env` file in the backend directory:
+   Create a `.env` file in the backend directory:
+
 ```env
 PORT=5000
 DB_URI=mongodb+srv://username:password@cluster.mongodb.net/commentdb
@@ -75,16 +84,19 @@ CORS_ORIGIN=*
 ```
 
 4. **Seed Database (Optional)**
-Create 100 test users:
+   Create 100 test users:
+
 ```bash
 npm run seed
 ```
 
 Test credentials:
+
 - Email: `user1@test.com` to `user100@test.com`
 - Password: `password123`
 
 5. **Start Development Server**
+
 ```bash
 npm run dev
 ```
@@ -177,13 +189,16 @@ See [API_DOCUMENTATION.md](./API_DOCUMENTATION.md) for detailed API documentatio
 **Quick Reference:**
 
 ### Authentication
+
 - `POST /api/v1/auth/register` - Register new user
 - `POST /api/v1/auth/login` - Login user
 
 ### User
+
 - `GET /api/v1/users/me` - Get current user profile
 
 ### Comments
+
 - `POST /api/v1/comments` - Create comment
 - `GET /api/v1/comments` - Get all comments (with pagination & sorting)
 - `GET /api/v1/comments/:id` - Get single comment
@@ -199,30 +214,32 @@ See [API_DOCUMENTATION.md](./API_DOCUMENTATION.md) for detailed API documentatio
 ### Socket.io Integration
 
 **Client Connection:**
-```javascript
-import { io } from 'socket.io-client';
 
-const socket = io('http://localhost:5000', {
+```javascript
+import { io } from "socket.io-client";
+
+const socket = io("http://localhost:5000", {
   auth: {
-    token: 'your-jwt-token'
-  }
+    token: "your-jwt-token",
+  },
 });
 
-socket.on('connect', () => {
-  console.log('Connected!');
+socket.on("connect", () => {
+  console.log("Connected!");
 });
 
 // Listen for events
-socket.on('comment:new', (data) => {
-  console.log('New comment:', data.comment);
+socket.on("comment:new", (data) => {
+  console.log("New comment:", data.comment);
 });
 
-socket.on('comment:reaction', (data) => {
-  console.log('Reaction updated:', data.comment);
+socket.on("comment:reaction", (data) => {
+  console.log("Reaction updated:", data.comment);
 });
 ```
 
 **Available Events:**
+
 - `comment:new` - New comment created
 - `comment:reply` - Reply created
 - `comment:update` - Comment updated
@@ -234,29 +251,36 @@ socket.on('comment:reaction', (data) => {
 ## Key Features Explained
 
 ### 1. Cursor-based Pagination
+
 Efficient pagination for large datasets using cursors instead of skip/limit.
 
 **Benefits:**
+
 - Consistent results even when data changes
 - Better performance for large collections
 - No skipped or duplicate items
 
 **Implementation:**
-- Simple cursor (_id) for `newest` sorting
+
+- Simple cursor (\_id) for `newest` sorting
 - Compound cursor (count_id) for `mostLiked`/`mostDisliked` sorting
 
 ### 2. Reaction System
+
 Single API endpoint handles both like and dislike with toggle logic.
 
 **Rules:**
+
 - One user can have only ONE reaction per comment
 - Toggle same reaction = remove
 - Toggle different reaction = switch
 
 ### 3. Soft Delete
+
 Comments are marked as deleted but not removed from database.
 
 **Benefits:**
+
 - Data retention for analytics
 - Can restore if needed
 - Maintains referential integrity
@@ -266,6 +290,7 @@ Comments are marked as deleted but not removed from database.
 ## Security Considerations
 
 ### Implemented
+
 - JWT token expiration (7 days)
 - Password complexity requirements
 - Email normalization (lowercase)
@@ -274,6 +299,7 @@ Comments are marked as deleted but not removed from database.
 - Authorization checks on sensitive operations
 
 ### Production Recommendations
+
 - Configure `CORS_ORIGIN` to specific frontend URL
 - Use HTTPS
 - Add rate limiting
@@ -286,6 +312,7 @@ Comments are marked as deleted but not removed from database.
 ## Database Schema
 
 ### User
+
 ```typescript
 {
   firstName: string
@@ -298,6 +325,7 @@ Comments are marked as deleted but not removed from database.
 ```
 
 ### Comment
+
 ```typescript
 {
   content: string (1-2000 chars)
@@ -314,6 +342,7 @@ Comments are marked as deleted but not removed from database.
 ```
 
 **Indexes:**
+
 - `author` (for user's comments)
 - `parentComment` (for replies)
 - `createdAt` (for sorting)
@@ -324,14 +353,17 @@ Comments are marked as deleted but not removed from database.
 ## Testing
 
 ### Manual Testing with Postman
+
 Import the `postman_collection.json` file into Postman.
 
 ### Socket.io Testing
+
 ```bash
 npm run test:socket
 ```
 
 ### Unit Tests
+
 ```bash
 npm run test
 ```
@@ -355,19 +387,20 @@ npm run test
 
 ## Environment Variables
 
-| Variable | Description | Example |
-|----------|-------------|---------|
-| `PORT` | Server port | `5000` |
-| `DB_URI` | MongoDB connection string | `mongodb+srv://...` |
-| `JWT_SECRET` | Secret for signing JWT | `supersecretkey` |
-| `JWT_EXPIRES_IN` | Token expiration | `7d` |
-| `CORS_ORIGIN` | Allowed CORS origins | `http://localhost:3000` |
+| Variable         | Description               | Example                 |
+| ---------------- | ------------------------- | ----------------------- |
+| `PORT`           | Server port               | `5000`                  |
+| `DB_URI`         | MongoDB connection string | `mongodb+srv://...`     |
+| `JWT_SECRET`     | Secret for signing JWT    | `supersecretkey`        |
+| `JWT_EXPIRES_IN` | Token expiration          | `7d`                    |
+| `CORS_ORIGIN`    | Allowed CORS origins      | `http://localhost:3000` |
 
 ---
 
 ## Deployment
 
 ### Build for Production
+
 ```bash
 npm run build
 ```
@@ -375,11 +408,13 @@ npm run build
 Compiled files in `dist/` directory.
 
 ### Start Production Server
+
 ```bash
 npm start
 ```
 
 ### Environment Setup
+
 Ensure all environment variables are set in production environment.
 
 ---
@@ -387,16 +422,19 @@ Ensure all environment variables are set in production environment.
 ## Troubleshooting
 
 ### MongoDB Connection Error
+
 - Check `DB_URI` in `.env`
 - Verify MongoDB Atlas IP whitelist
 - Check network connection
 
 ### Socket.io Not Connecting
+
 - Verify JWT token is valid
 - Check CORS configuration
 - Ensure server is running
 
 ### Validation Errors
+
 - Check request body matches schema
 - Verify password requirements
 - Check MongoDB ObjectId format (24 hex chars)
